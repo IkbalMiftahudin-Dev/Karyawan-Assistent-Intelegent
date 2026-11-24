@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KaryawanAI — Personal Intelligent Employee & Scheduling Assistant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-name">KaryawanAI</div>
+          <div class="brand-sub">Personal Smart Assistant</div>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <button class="nav-item active" data-tab="dashboard">
+          <span class="nav-ico">📅</span>
+          <span>Dashboard & Jadwal</span>
+        </button>
+        <button class="nav-item" data-tab="chat">
+          <span class="nav-ico">✨</span>
+          <span>AI Assistant Chat</span>
+        </button>
+        <button class="nav-item" data-tab="knowledge">
+          <span class="nav-ico">📚</span>
+          <span>Knowledge Base SOP</span>
+        </button>
+        <button class="nav-item" data-tab="settings">
+          <span class="nav-ico">⚙️</span>
+          <span>Profil & Pengaturan</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="status-card">
+          <div class="status-row">
+            <span class="dot" id="dot-db"></span>
+            <span id="status-db-text">Memeriksa MySQL...</span>
+          </div>
+          <div class="status-row">
+            <span class="dot" id="dot-ai"></span>
+            <span id="status-ai-text">Memeriksa Gemini...</span>
+          </div>
+        </div>
+        <div class="user-mini" id="sidebar-user">
+          <div class="avatar" id="user-avatar">K</div>
+          <div class="user-mini-info">
+            <div class="user-mini-name" id="sidebar-user-name">Karyawan Pribadi</div>
+            <div class="user-mini-role" id="sidebar-user-role">08:30 – 17:30</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-area">
+      <!-- Top Header -->
+      <header class="topbar">
+        <div>
+          <h1 class="page-title" id="page-title">Dashboard & Penjadwalan Cerdas</h1>
+          <p class="page-subtitle" id="page-date-label">Memuat tanggal...</p>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-secondary" id="btn-briefing">
+            <span>⚡</span> AI Daily Briefing
+          </button>
+          <button class="btn btn-primary" id="btn-open-new-schedule">
+            <span>+</span> Tambah Jadwal
+          </button>
+        </div>
+      </header>
+
+      <!-- TAB 1: DASHBOARD & JADWAL -->
+      <section class="tab-panel active" id="tab-dashboard">
+        <!-- Quick AI Command Bar -->
+        <form class="quick-ai-bar" id="quick-ai-form">
+          <span class="quick-ai-badge">✨ AI</span>
+          <input
+            type="text"
+            id="quick-ai-input"
+            placeholder="Perintahkan asisten langsung... contoh: 'Jadwalkan meeting evaluasi besok jam 10:00 sampai 11:00 prioritas tinggi'"
+            autocomplete="off"
+          />
+          <button type="submit" class="btn btn-primary btn-sm">Kirim ke AI</button>
+        </form>
+
+        <!-- AI Briefing Box (hidden until triggered or loaded) -->
+        <div class="briefing-card hidden" id="briefing-card">
+          <div class="briefing-header">
+            <div class="briefing-title">⚡ Ringkasan Harian Cerdas (Daily Briefing)</div>
+            <button class="icon-btn" id="btn-close-briefing" title="Tutup">✕</button>
+          </div>
+          <div class="briefing-body markdown-body" id="briefing-content">Memuat ringkasan...</div>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Agenda Hari Ini</div>
+            <div class="stat-value" id="stat-today-total">0</div>
+            <div class="stat-meta"><span id="stat-today-pending">0</span> menunggu · <span id="stat-today-done">0</span> selesai</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Prioritas Tinggi Aktif</div>
+            <div class="stat-value text-danger" id="stat-high">0</div>
+            <div class="stat-meta">Perlu fokus utama</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Jam Kosong Hari Ini</div>
+            <div class="stat-value text-success" id="stat-free">0j</div>
+            <div class="stat-meta">Di dalam jam kerja Anda</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Dokumen SOP & Catatan</div>
+            <div class="stat-value text-accent" id="stat-docs">0</div>
+            <div class="stat-meta">Terhubung ke AI Assistant</div>
+          </div>
+        </div>
+
+        <!-- Calendar + Agenda Split -->
+        <div class="schedule-layout">
+          <!-- Left: Interactive Calendar + Free Slots -->
+          <div class="card calendar-card">
+            <div class="card-header">
+              <h2 id="cal-month-label">Bulan Tahun</h2>
+              <div class="cal-nav">
+                <button class="icon-btn" id="cal-prev" title="Bulan sebelumnya">‹</button>
+                <button class="btn btn-ghost btn-xs" id="cal-today">Hari Ini</button>
+                <button class="icon-btn" id="cal-next" title="Bulan berikutnya">›</button>
+              </div>
+            </div>
+            <div class="cal-weekdays">
+              <span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span>
+            </div>
+            <div class="cal-grid" id="cal-grid"></div>
+
+            <div class="divider"></div>
+
+            <div class="free-slots-box">
+              <div class="free-slots-header">
+                <h3>🕒 Slot Waktu Kosong</h3>
+                <select id="free-slot-duration" class="select-sm">
+                  <option value="30">Min 30 mnt</option>
+                  <option value="60" selected>Min 60 mnt</option>
+                  <option value="90">Min 90 mnt</option>
+                  <option value="120">Min 120 mnt</option>
+                </select>
+              </div>
+              <div class="free-slots-list" id="free-slots-list">
+                <div class="muted-text">Memuat slot kosong...</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Agenda List for Selected Date -->
+          <div class="card agenda-card">
+            <div class="card-header agenda-header">
+              <div>
+                <h2 id="selected-date-title">Agenda Hari Ini</h2>
+                <span class="muted-text" id="selected-date-count">0 jadwal</span>
+              </div>
+              <div class="agenda-filters">
+                <select id="filter-category" class="select-sm">
+                  <option value="">Semua Kategori</option>
+                  <option value="meeting">Meeting</option>
+                  <option value="deep_work">Deep Work</option>
+                  <option value="deadline">Deadline</option>
+                  <option value="personal">Personal</option>
+                  <option value="reminder">Reminder</option>
+                </select>
+                <select id="filter-status" class="select-sm">
+                  <option value="">Semua Status</option>
+                  <option value="scheduled">Terjadwal</option>
+                  <option value="done">Selesai</option>
+                  <option value="cancelled">Dibatalkan</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="agenda-list" id="agenda-list">
+              <div class="empty-state">Memuat daftar jadwal...</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: AI ASSISTANT CHAT -->
+      <section class="tab-panel" id="tab-chat">
+        <div class="chat-container card">
+          <div class="chat-header">
+            <div>
+              <h2>✨ Asisten Cerdas Pribadi (Gemini AI)</h2>
+              <p class="muted-text">Bisa membuat/mengubah jadwal langsung ke MySQL, cek jam kosong, & jawab SOP perusahaan</p>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="btn-clear-chat">🗑️ Hapus Riwayat</button>
+          </div>
+
+          <div class="quick-prompts">
+            <button class="chip" data-prompt="Apa saja jadwal saya hari ini dan mana prioritas tertinggi?">📅 Jadwal hari ini</button>
+            <button class="chip" data-prompt="Cari slot waktu kosong besok minimal 60 menit untuk deep work">🕒 Cari jam kosong besok</button>
+            <button class="chip" data-prompt="Jadwalkan meeting evaluasi pekerjaan besok jam 10:00 sampai 11:00 prioritas tinggi di Google Meet">➕ Buat jadwal meeting besok</button>
+            <button class="chip" data-prompt="Bagaimana SOP pengajuan cuti tahunan dan izin sakit?">📄 Tanya SOP cuti</button>
+          </div>
+
+          <div class="chat-messages" id="chat-messages"></div>
+
+          <form class="chat-input-bar" id="chat-form">
+            <textarea
+              id="chat-input"
+              rows="1"
+              placeholder="Tulis pesan... (Tekan Enter untuk kirim, Shift+Enter baris baru)"
+            ></textarea>
+            <button type="submit" class="btn btn-primary" id="btn-send-chat">Kirim ➤</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- TAB 3: KNOWLEDGE BASE SOP -->
+      <section class="tab-panel" id="tab-knowledge">
+        <div class="kb-layout">
+          <div class="card kb-forms">
+            <h2>📤 Tambah Dokumen / Catatan SOP</h2>
+            <p class="muted-text">Dokumen yang disimpan di sini akan dibaca otomatis oleh AI saat menjawab pertanyaan Anda.</p>
+
+            <div class="sub-tabs">
+              <button class="sub-tab active" data-kb-mode="upload">Upload File (.PDF / .TXT / .MD)</button>
+              <button class="sub-tab" data-kb-mode="manual">Tulis Teks Manual</button>
+            </div>
+
+            <form id="kb-upload-form" class="form-stack">
+              <label>
+                <span>Judul Dokumen (opsional)</span>
+                <input type="text" id="kb-upload-title" placeholder="Contoh: Kebijakan Lembur 2026" />
+              </label>
+              <label>
+                <span>Kategori</span>
+                <input type="text" id="kb-upload-category" value="SOP & Kebijakan" />
+              </label>
+              <label>
+                <span>Pilih File (.pdf, .txt, .md)</span>
+                <input type="file" id="kb-upload-file" accept=".pdf,.txt,.md,.csv" required />
+              </label>
+              <button type="submit" class="btn btn-primary">Upload & Simpan ke Database</button>
+            </form>
+
+            <form id="kb-manual-form" class="form-stack hidden">
+              <label>
+                <span>Judul Dokumen / Catatan</span>
+                <input type="text" id="kb-manual-title" placeholder="Contoh: Alur Reimbursement Transport" required />
+              </label>
+              <label>
+                <span>Kategori</span>
+                <input type="text" id="kb-manual-category" value="SOP Kerja" />
+              </label>
+              <label>
+                <span>Isi Dokumen / SOP</span>
+                <textarea id="kb-manual-content" rows="7" placeholder="Tulis poin-poin SOP, aturan perusahaan, atau catatan penting Anda di sini..." required></textarea>
+              </label>
+              <button type="submit" class="btn btn-primary">Simpan Dokumen</button>
+            </form>
+          </div>
+
+          <div class="card kb-list-card">
+            <div class="card-header">
+              <h2>📚 Daftar Knowledge Base</h2>
+              <input type="search" id="kb-search" class="input-sm" placeholder="Cari judul atau isi SOP..." />
+            </div>
+            <div class="kb-list" id="kb-list">
+              <div class="empty-state">Memuat dokumen...</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: PROFIL & PENGATURAN -->
+      <section class="tab-panel" id="tab-settings">
+        <div class="settings-grid">
+          <div class="card">
+            <h2>👤 Profil Karyawan Pribadi</h2>
+            <p class="muted-text">Digunakan AI untuk memahami jam kerja dan gaya penjadwalan Anda.</p>
+            <form id="profile-form" class="form-stack">
+              <label>
+                <span>Nama Lengkap</span>
+                <input type="text" id="prof-name" required />
+              </label>
+              <div class="form-row-2">
+                <label>
+                  <span>Jabatan / Role</span>
+                  <input type="text" id="prof-role" />
+                </label>
+                <label>
+                  <span>Divisi / Departemen</span>
+                  <input type="text" id="prof-dept" />
+                </label>
+              </div>
+              <div class="form-row-2">
+                <label>
+                  <span>Jam Mulai Kerja</span>
+                  <input type="time" id="prof-start" required />
+                </label>
+                <label>
+                  <span>Jam Selesai Kerja</span>
+                  <input type="time" id="prof-end" required />
+                </label>
+              </div>
+              <label>
+                <span>Preferensi Penjadwalan untuk AI</span>
+                <textarea id="prof-pref" rows="3" placeholder="Contoh: Jangan jadwalkan meeting saat jam istirahat 12:00-13:00, prioritaskan fokus kerja pagi hari."></textarea>
+              </label>
+              <button type="submit" class="btn btn-primary">Simpan Profil</button>
+            </form>
+          </div>
+
+          <div class="card">
+            <h2>🤖 Integrasi Google Gemini API & MySQL</h2>
+            <p class="muted-text">Dapatkan API Key gratis di <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a>, lalu tempel di bawah ini.</p>
+            <form id="ai-settings-form" class="form-stack">
+              <label>
+                <span>Status API Key Saat Ini</span>
+                <input type="text" id="ai-key-status" disabled />
+              </label>
+              <label>
+                <span>Gemini API Key Baru (kosongkan jika tidak ingin mengubah)</span>
+                <input type="password" id="ai-key-input" placeholder="AIzaSy..." autocomplete="off" />
+              </label>
+              <label>
+                <span>Model Gemini</span>
+                <select id="ai-model-select">
+                  <option value="gemini-3.8-flash">gemini-3.8-flash (Terbaru, Cepat & Direkomendasikan)</option>
+                  <option value="gemini-3.7-flash">gemini-3.7-flash (Stabil & Cepat)</option>
+                  <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Super Ringan)</option>
+                  <option value="gemini-4-neon">gemini-4-neon (Penalaran Mendalam)</option>
+                </select>
+              </label>
+              <button type="submit" class="btn btn-primary">Simpan Konfigurasi AI</button>
+            </form>
+
+            <div class="divider"></div>
+            <div class="db-info-box">
+              <h3>🗄️ Informasi Database MySQL</h3>
+              <p class="muted-text">Host: <strong id="info-db-host">-</strong> · Database: <strong id="info-db-name">-</strong></p>
+              <p class="muted-text">Database & seluruh tabel telah dibuat otomatis di MySQL XAMPP Anda.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODAL: CREATE / EDIT SCHEDULE -->
+  <div class="modal-backdrop hidden" id="schedule-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 id="modal-title">Tambah Jadwal Baru</h2>
+        <button class="icon-btn" id="btn-close-modal">✕</button>
+      </div>
+      <form id="schedule-form" class="form-stack">
+        <input type="hidden" id="sched-id" />
+        <label>
+          <span>Judul Kegiatan / Tugas</span>
+          <input type="text" id="sched-title" placeholder="Contoh: Meeting Proyek Q4" required />
+        </label>
+        <div class="form-row-2">
+          <label>
+            <span>Waktu Mulai</span>
+            <input type="datetime-local" id="sched-start" required />
+          </label>
+          <label>
+            <span>Waktu Selesai</span>
+            <input type="datetime-local" id="sched-end" required />
+          </label>
+        </div>
+        <div class="form-row-3">
+          <label>
+            <span>Kategori</span>
+            <select id="sched-category">
+              <option value="meeting">Meeting</option>
+              <option value="deep_work">Deep Work</option>
+              <option value="deadline">Deadline</option>
+              <option value="personal">Personal</option>
+              <option value="reminder">Reminder</option>
+            </select>
+          </label>
+          <label>
+            <span>Prioritas</span>
+            <select id="sched-priority">
+              <option value="high">Tinggi</option>
+              <option value="medium" selected>Sedang</option>
+              <option value="low">Rendah</option>
+            </select>
+          </label>
+          <label>
+            <span>Status</span>
+            <select id="sched-status">
+              <option value="scheduled">Terjadwal</option>
+              <option value="done">Selesai</option>
+              <option value="cancelled">Dibatalkan</option>
+            </select>
+          </label>
+        </div>
+        <div class="form-row-2">
+          <label>
+            <span>Lokasi / Link Meeting</span>
+            <input type="text" id="sched-location" placeholder="Ruang Rapat / Google Meet" />
+          </label>
+          <label>
+            <span>Pengingat (menit sebelum)</span>
+            <input type="number" id="sched-reminder" min="0" max="1440" value="15" />
+          </label>
+        </div>
+        <label>
+          <span>Catatan / Deskripsi</span>
+          <textarea id="sched-desc" rows="3" placeholder="Agenda pembahasan atau target penyelesaian..."></textarea>
+        </label>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" id="btn-cancel-modal">Batal</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-schedule">Simpan Jadwal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: DOCUMENT PREVIEW -->
+  <div class="modal-backdrop hidden" id="doc-modal">
+    <div class="modal-box modal-lg">
+      <div class="modal-header">
+        <div>
+          <h2 id="doc-modal-title">Judul Dokumen</h2>
+          <span class="badge" id="doc-modal-cat">Kategori</span>
+        </div>
+        <button class="icon-btn" id="btn-close-doc-modal">✕</button>
+      </div>
+      <pre class="doc-preview-content" id="doc-modal-content"></pre>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
